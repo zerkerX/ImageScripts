@@ -1,0 +1,17 @@
+#!/bin/sh
+outformat="png"
+SAVEIFS=$IFS
+IFS="
+"
+mkdir out
+for x in `ls *.png`
+do
+    if [ ! -f $x ]; then
+        continue
+    fi
+    
+    y=${x%\.*}
+    magick +repage -crop 2x1@ +repage "$x" "out/$y-%d.png"
+done
+
+IFS=$SAVEIFS

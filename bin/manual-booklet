@@ -1,0 +1,62 @@
+#!/usr/bin/python3
+import os, subprocess, sys, pdb, traceback, shutil
+
+from glob import glob
+from argparse import ArgumentParser
+
+def makeBooklet(pattern, outname, landscape):
+    pages = sorted(glob(pattern + "*"))
+
+    firstmerge = "-append" if landscape else "+append"
+    secondmerge = "+append" if landscape else "-append"
+    
+    if len(pages) % 2 == 0:
+        for num in range(len(pages) // 2):
+            if num % 2 == 0:
+                # Even pages start with later page then earlier page
+                subprocess.call(['magick', pages[-(num+1)], pages[num],
+                    firstmerge, "booklet-{:03}.png".format(num) ])
+            else:
+                # Odd pages are reversed
+                subprocess.call(['magick', pages[num], pages[-(num+1)],
+                    firstmerge, "booklet-{:03}.png".format(num) ])
+    else:
+        pass
+        
+    # TODO: Make a choice:
+    pagesets = sorted(glob("booklet*.png"))
+    
+    outnum = 0
+    lastnum = 0
+    
+    for num in range(3, len(pagesets), 4):
+        subprocess.call(['magick', pagesets[num-3], pagesets[num-1],
+                    secondmerge, "multibooklet-{:03}.png".format(outnum) ])
+        subprocess.call(['magick', pagesets[num-2], pagesets[num],
+                    secondmerge, "multibooklet-{:03}.png".format(outnum+1) ])
+        lastnum = num
+        outnum += 2
+
+    # remaining pages are copied manually
+    for num in range(lastnum + 1, len(pagesets) ):
+        shutil.copy(pagesets[num], "multibooklet-{:03}.png".format(outnum) )
+        outnum += 1
+    
+    subprocess.call(['magick', "multibooklet*.png", outname])
+
+def main():
+    parser = ArgumentParser(description='Combines pages into booklet.')
+    parser.add_argument('prefix',
+                       help='Filename prefix to use.')
+    parser.add_argument('--landscape', '-l',
+                        help='Landscape orientation', action='store_true')
+
+    #TODO: Add option to have two pages per page
+    # Add option for either blank page or blank rear cover.
+
+    args = parser.parse_args()
+    
+    makeBooklet(args.prefix, "booklet.pdf", args.landscape)
+
+if __name__ == '__main__':
+    main()

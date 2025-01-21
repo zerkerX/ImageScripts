@@ -1,0 +1,35 @@
+#!/bin/sh
+outfolder="out/"
+SAVEIFS=$IFS
+IFS="
+"
+EXTS="tga
+bmp
+TGA
+BMP
+gif
+GIF
+jpg
+jpeg
+JPG
+JPEG
+ppm
+pbm
+tif
+png
+PNG"
+mkdir $outfolder
+for EXT in $EXTS
+do
+    for x in `ls *.$EXT`
+    do
+        if [ ! -f $x ]; then
+            continue
+        fi
+
+        y=${x%\.*}
+        magick "$y.$EXT" -rotate 90 "$outfolder$y.$EXT"
+    done
+done
+
+IFS=$SAVEIFS

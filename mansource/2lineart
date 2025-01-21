@@ -1,0 +1,16 @@
+NAME
+  2lineart - convert image files in the current directory to 2-colour lineart
+SYNOPSIS
+  2lineart
+DESCRIPTION
+  2lineart converts every image file of a variety of formats 
+  (tga, bmp, png, gif, jpeg)
+  in the current working directory to a black and white (2-colour) png
+  image.
+  Conversion is performed using ImageMagick(1)'s convert(1) utility.
+  Original files are moved to a 'backup' subfolder, which is created
+  if needed.
+SEE ALSO
+  ImageMagick(1), convert(1)
+AUTHOR
+  Ryan Armstrong <software@zerker.ca>

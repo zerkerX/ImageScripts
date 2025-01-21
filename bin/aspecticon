@@ -1,0 +1,34 @@
+#!/bin/sh
+outfolder="out/"
+outformat=png
+SAVEIFS=$IFS
+IFS="
+"
+EXTS="tga
+bmp
+TGA
+BMP
+gif
+GIF
+jpg
+jpeg
+JPG
+JPEG
+png
+PNG"
+mkdir $outfolder
+for EXT in $EXTS
+do
+    for x in `ls *.$EXT`
+    do
+        if [ ! -f $x ]; then
+            continue
+        fi
+        
+        y=${x%\.*}
+        composite -compose Src -gravity Center "$x" -resize 256x256 \
+                /usr/local/share/misc/empty.png -alpha set "$outfolder$y.$outformat"
+    done
+done
+
+IFS=$SAVEIFS

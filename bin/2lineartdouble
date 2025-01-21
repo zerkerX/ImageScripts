@@ -1,0 +1,33 @@
+#!/bin/sh
+backupfolder="backup/"
+SAVEIFS=$IFS
+IFS="
+"
+EXTS="tga
+bmp
+TGA
+BMP
+gif
+GIF
+jpg
+jpeg
+JPG
+JPEG
+png
+PNG"
+mkdir $backupfolder
+for EXT in $EXTS
+do
+    for x in `ls *.$EXT`
+    do
+        if [ ! -f $x ]; then
+            continue
+        fi
+        
+        y=${x%\.*}
+        mv "$x" "$backupfolder$x"
+        magick "$backupfolder$x" -resize 200%x200% +dither -colors 2 -colorspace gray -normalize "$y.png"
+    done
+done
+
+IFS=$SAVEIFS

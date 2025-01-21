@@ -1,0 +1,90 @@
+#!/usr/bin/python3
+import os, time, shutil, subprocess, sys, urllib.parse
+import pyperclip
+import notify2
+from argparse import ArgumentParser
+
+def main():
+    parser = ArgumentParser(description='Creates a gallery of images.', add_help=False)
+    parser.add_argument('-w', dest='width', default='800',
+                       help='Maximum thumbnail width. Defalts to 800')
+    parser.add_argument('-h',dest='height', default='',
+                       help='Maximum thumbnail height. If not specified, height is not constrained')
+    parser.add_argument('-o', dest='outpath',
+                       default='/webdav/zerker/public_html/misc/forumstuff',
+                       help='Output path')
+    parser.add_argument('-p', dest='proboards',
+                       action='store_true',
+                       help='Proboards markup')
+    parser.add_argument('-s', dest='sound',
+                       default='/usr/local/share/sounds/imageshare.wav',
+                       help='Sound to play when image share is complete.')
+    parser.add_argument('-e', dest='webpath',
+                       default='http://www.zerker.ca/misc/forumstuff/',
+                       help='Web path corresponding to output path')
+    parser.add_argument('-?', '--help', action='help',
+                       help='Displays this help message and exits.')
+    parser.add_argument('imagefile', default='.', nargs='?',
+                       help='Image file to share.')
+
+    args = parser.parse_args()
+    notify2.init('Image Share')
+
+    (imagepath, imagefilename) = os.path.split(args.imagefile)
+    (imagebasename, imageext) = os.path.splitext(imagefilename)
+    
+    destname = os.path.join(args.outpath, imagefilename)
+    thumbname = ""
+    
+    # Copy the original image
+    try:
+        shutil.copy2(args.imagefile, destname)
+    except FileNotFoundError:
+        print("Could not copy file. Waiting for 6 seconds before a retry...")
+        time.sleep(6)
+        shutil.copy2(args.imagefile, destname)
+
+    # Determine resolution and test if a thumbnail is needed
+    try:
+        (width, height) = subprocess.check_output(['identify', '-format', '%wx%h',
+            args.imagefile]).decode().split('x')
+        width = int(width)
+        height = int(height)
+    except subprocess.CalledProcessError:
+        # Must not be an image. Set sizes to zero to prevent resize logic
+        width = 0
+        height = 0
+    
+    if args.width and width > int(args.width) or args.height and height > int(args.height):
+        thumbname = imagebasename + "_thumb.jpg"
+        subprocess.call(['magick', '-resize', '>{}x{}'.format(args.width, args.height),
+            args.imagefile, '-auto-orient', os.path.join(args.outpath, thumbname)])
+        
+    result = ""
+    if args.proboards:
+        if thumbname:
+            result = '[a href="{}"][img src="{}"][/a]'.format(
+                urllib.parse.urljoin(args.webpath, urllib.parse.quote(imagefilename)),
+                urllib.parse.urljoin(args.webpath, urllib.parse.quote(thumbname)) )
+        else:
+            result = '[img src="{}"]'.format(
+                urllib.parse.urljoin(args.webpath, urllib.parse.quote(imagefilename)) )
+    else:
+        if thumbname:
+            result = '[url={}][img]{}[/img][/url]'.format(
+                urllib.parse.urljoin(args.webpath, urllib.parse.quote(imagefilename)),
+                urllib.parse.urljoin(args.webpath, urllib.parse.quote(thumbname)) )
+        else:
+            result = '[img]{}[/img]'.format(
+                urllib.parse.urljoin(args.webpath, urllib.parse.quote(imagefilename)) )
+            
+    print(result)
+    pyperclip.copy(result)
+
+    n = notify2.Notification('Shared image', result, 'emblem-shared')
+    n.show()
+    time.sleep(1)
+
+
+if __name__ == '__main__':
+    main()

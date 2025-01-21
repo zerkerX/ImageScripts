@@ -1,0 +1,25 @@
+#!/bin/sh
+outformat="jpeg"
+SAVEIFS=$IFS
+IFS="
+"
+EXTS="tga
+bmp
+TGA
+BMP
+HEIC
+heic"
+for EXT in $EXTS
+do
+	for x in `ls *.$EXT`
+	do
+		if [ ! -f $x ]; then
+			continue
+		fi
+		
+		y=${x%\.*}
+		magick -quality 95 "$y.$EXT" "$y.$outformat" && trash "$y.$EXT"
+	done
+done
+
+IFS=$SAVEIFS

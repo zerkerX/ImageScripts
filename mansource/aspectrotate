@@ -1,0 +1,16 @@
+NAME
+  aspectrotate - rotates images by 90 degrees
+SYNOPSIS
+  aspectrotate
+DESCRIPTION
+  aspectrotate rotates every image file of a variety of formats 
+  (tga, bmp, png, gif, jpeg)
+  in the current working directory by 90 degrees and saves the result
+  in the same format.
+  Conversion is performed using ImageMagick(1)'s convert(1) utility.
+  The output files are placed into a 'out' subfolder, 
+  which is created if needed.
+SEE ALSO
+  ImageMagick(1), convert(1)
+AUTHOR
+  Ryan Armstrong <software@zerker.ca>

@@ -1,0 +1,8 @@
+#!/bin/sh
+datename=`date +%Y%m%d-%H%M%S`
+outpath=/var/tmp/$datename.xwd
+pngpath=$1/$datename.png
+xwd -root -out $outpath
+magick $outpath $pngpath
+rm $outpath
+aplay /usr/local/share/sounds/camera1.wav

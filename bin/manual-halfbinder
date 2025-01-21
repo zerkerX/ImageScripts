@@ -1,0 +1,40 @@
+#!/usr/bin/python3
+import os, subprocess, sys, pdb, traceback, shutil
+
+from glob import glob
+from argparse import ArgumentParser
+
+def makeBooklet(pattern, outname):
+    pages = sorted(glob(pattern + "*"))
+    
+    if len(pages) % 2 == 0:
+        for num in range(len(pages) // 2):
+            if num % 2 == 0:
+                # Even pages are front pages, so go left-to-right
+                subprocess.call(['magick', pages[num * 2], pages[num * 2 + 2],
+                    "+append", "booklet-{:03}.png".format(num) ])
+            else:
+                # Odd pages are back pages, so go right-to-left
+                subprocess.call(['magick', pages[num * 2 + 1], pages[num * 2 - 1],
+                    "+append", "booklet-{:03}.png".format(num) ])
+
+        # TODO handle trailing leftover page pair?
+    else:
+        pass
+   
+    subprocess.call(['magick', "booklet*.png", outname])
+
+def main():
+    parser = ArgumentParser(description='Combines pages into booklet.')
+    parser.add_argument('prefix',
+                       help='Filename prefix to use.')
+
+    #TODO: Add option to have two pages per page
+    # Add option for either blank page or blank rear cover.
+
+    args = parser.parse_args()
+    
+    makeBooklet(args.prefix, "halfbinder.pdf")
+
+if __name__ == '__main__':
+    main()

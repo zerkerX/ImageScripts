@@ -1,0 +1,47 @@
+#!/bin/sh
+outformat="png"
+SAVEIFS=$IFS
+IFS="
+"
+EXTS="tga
+bmp
+TGA
+BMP
+gif
+GIF
+ppm
+PPM
+pbm
+PBM
+xbm
+XBM
+pcx
+PCX
+psd
+PSD
+ico
+ICO
+xwd
+XWD
+tif
+tiff
+webp
+WEBP
+avif
+AVIF
+TIF
+TIFF"
+for EXT in $EXTS
+do
+	for x in `ls *.$EXT`
+	do
+		if [ ! -f $x ]; then
+			continue
+		fi
+		
+		y=${x%\.*}
+		magick "$y.$EXT" "$y.$outformat" && trash "$y.$EXT"
+	done
+done
+
+IFS=$SAVEIFS

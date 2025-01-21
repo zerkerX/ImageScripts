@@ -1,0 +1,212 @@
+#!/usr/bin/python3
+import os, subprocess, sys, pdb, traceback
+
+import notify2
+from argparse import ArgumentParser
+
+def main():
+    parser = ArgumentParser(description='Creates a gallery of images.', add_help=False)
+    parser.add_argument('-w', dest='width', default='',
+                       help='Maximum thumbnail width. If not specified, width is not constrained')
+    parser.add_argument('-h',dest='height', default='',
+                       help='Maximum thumbnail height. If not specified, height is not constrained')
+    parser.add_argument('-s', action='store_true', dest='steam',
+                       help='Generates a Steam screenshot folder gallery with existing thumbnails')
+    parser.add_argument('-o', dest='outfilename',
+                       default='index.html',
+                       help='Output gallery filename')
+    parser.add_argument('-t', action='store_false', dest='titles',
+                       help='If set, surpresses titles for each subfolder')
+    parser.add_argument('-f', action='store_true', dest='forcethumb',
+                       help='If set, forces thumbnail regeneration. Otherwise, existing thumbnails will be used.')
+    parser.add_argument('-d', action='store_true', dest='double',
+                       help='If set, double-sizes small images (320x240 or lower). The image size is set via CSS to be resized by the web browser. Common resolutions of game screenshots (DOS, NES and SNES) are aspect-ratio corrected to 4:3 or closest appropriate. Not compatible with Steam mode.')
+    parser.add_argument('--DOS', action='store_true',
+                       help='If set, forces DOS-style aspect ratio correction (e.g. 320x200 -> 320x240) regardless of whether images are double sized. Can be useful for cropped screenshots, or for correcting aspect ratio without scaling. Not compatible with Steam mode. If used in conjunction with -d, ALL images will be double sized.')
+    parser.add_argument('--NESuncrop', action='store_true',
+                       help='If set, forces SNES-style aspect uncropped ratio correction (e.g. 256x240 -> 320x240) regardless of whether images are double sized. Can be useful for cropped screenshots, or for correcting aspect ratio without scaling. Not compatible with Steam mode. If used in conjunction with -d, ALL images will be double sized.')
+    parser.add_argument('--NES', action='store_true',
+                       help='If set, forces NES/SNES-style cropped aspect ratio correction (e.g. 256x224 -> 300x240) regardless of whether images are double sized. Can be useful for cropped screenshots, or for correcting aspect ratio without scaling. Not compatible with Steam mode. If used in conjunction with -d, ALL images will be double sized.')
+    parser.add_argument('-?', '--help', action='help',
+                       help='Displays this help message and exits.')
+    parser.add_argument('imagefolder', default='.', nargs='?',
+                       help='Image folder to generate a gallery for.')
+
+    args = parser.parse_args()
+
+    # Generate the appropriate gallery:
+    # TODO: Make thumbs folder hidden on Windows
+    # TODO: Test on Windows.
+    # TODO: Somehow test if thumbnails are outdated
+
+    galleryfn = os.path.join(args.imagefolder, args.outfilename)
+    gallery = open(galleryfn, 'w')
+
+    gallery.write("""<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+    <html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="viewport" content="width=device-width" />
+        <title>Image Gallery</title>
+        <style type="text/css">
+        body {
+            background: black;
+            font-family: sans-serif;
+            font-size: 14px;
+            background: black;
+            margin: 0px;
+            padding: 0px;
+            color: white;
+        }
+        H1 {
+            margin: 0px;
+            padding: 10px;
+            width: 100%;
+            background: #444;
+            color: #09F;
+            font-size: 20px;
+            border-bottom: 2px solid #666;
+        }
+        
+        H2 {
+            margin: 0px;
+            padding: 10px;
+            color: white;
+            font-size: 18px;
+            border-bottom: 2px solid #666;
+            border-top: 2px solid #666;
+        }
+        
+        H3
+        {
+            font-weight: bold;
+            font-size: 15px;
+            margin: 0px;
+            padding: 0px;
+        }
+
+        /*Body Stuff*/
+        .entrylist {
+            margin: 10px;
+            padding: 10px;
+            background: black;
+            color: white;
+            border: 2px solid black;
+        }
+
+        /*Entry Stuff*/
+        .entry {
+            padding: 4px;
+            display: inline-block;
+            border: 1px solid #444;
+            width:auto;
+            height:auto;
+            text-align: center;
+            margin: 3px;
+        }
+
+        </style>
+    </head>
+    <body>
+    <h1>Image Gallery</h1>
+    """)
+
+    for (dirpath, dirnames, filenames) in os.walk(args.imagefolder):
+        relpath = os.path.relpath(dirpath, args.imagefolder)
+        if args.steam:
+            if 'thumbnails' in dirpath:
+                if args.titles:
+                    gallery.write('<h2>{}</h2>'.format(relpath))
+                for filename in sorted(filenames):
+                    gallery.write('<a href="{}"><img src="{}" title="{}"/></a>'.format(
+                        os.path.join(relpath, '..', filename),
+                        os.path.join(relpath, filename),
+                        filename))
+        
+        elif not dirpath.endswith('.thumbs'):
+            if args.titles:
+                gallery.write('<h2>{}</h2>'.format(relpath))
+            for filename in sorted(filenames):
+                try:
+                    if os.path.splitext(filename)[1].lower() in ('.jpeg', '.jpg', '.png', '.gif', '.bmp', '.svg'):
+                        if args.double or args.height or args.width or args.DOS or args.NESuncrop or args.NES:
+                            # Determine resolution:
+                            (width, height) = subprocess.check_output(['identify', '-format', '%wx%h',
+                                os.path.join(dirpath, filename)]).decode().split('x')
+                            width = int(width)
+                            height = int(height)
+                        if args.width and width > int(args.width) or args.height and height > int(args.height):
+                            # TODO: Only make thumbnails if the image is LARGER than the constrain size
+                            # Right now ImageMagic will do this, but it still create a needless Thumbnail.
+                            if not os.path.exists(os.path.join(dirpath, '.thumbs')):
+                                os.mkdir(os.path.join(dirpath, '.thumbs'))
+                            if args.forcethumb or not os.path.exists(os.path.join(dirpath, '.thumbs', filename)):
+                                subprocess.call(['magick',
+                                    os.path.join(dirpath, filename),
+                                    '-resize', '>{}x{}'.format(args.width, args.height),
+                                    os.path.join(dirpath, '.thumbs', filename)])
+                            gallery.write('<a href="{}"><img src="{}" title="{}"/></a>'.format(
+                                os.path.join(relpath, filename),
+                                os.path.join(relpath, '.thumbs', filename),
+                                filename))
+                        else:
+                            if args.double or args.DOS or args.NESuncrop or args.NES:
+                                if args.DOS and args.double:
+                                    (outwidth, outheight) = (width*2, int(height*2.4))
+                                elif args.DOS:
+                                    (outwidth, outheight) = (width, int(height*1.2))
+                                elif args.NESuncrop:
+                                    (outwidth, outheight) = (int(width*1.1328125), height)
+                                elif args.NES \
+                                        or (width, height) == (512, 444) \
+                                        or (width, height) == (512, 446) \
+                                        or (width, height) == (512, 448):                                
+                                    (outwidth, outheight) = (int(width*1.2109375), height)
+                                elif (args.NESuncrop and args.double) \
+                                        or (width, height) == (256, 240) \
+                                        or (width, height) == (256, 232):
+                                    (outwidth, outheight) = (int(width*2.265625), height*2)
+                                elif (args.NES and args.double) \
+                                        or (width, height) == (240, 224) \
+                                        or (width, height) == (256, 222) \
+                                        or (width, height) == (256, 223) \
+                                        or (width, height) == (256, 224):
+                                    (outwidth, outheight) = (int(width*2.421875), height*2)
+                                elif (width, height) == (320, 200) \
+                                        or (width, height) == (640, 400) \
+                                        or (width, height) == (360, 400) \
+                                        or (width, height) == (640, 200) \
+                                        or (width, height) == (320, 400) \
+                                        or (width, height) == (638, 347) \
+                                        or (width, height) == (352, 480) \
+                                        or (width, height) == (352, 440) \
+                                        or (width, height) == (640, 350):
+                                    (outwidth, outheight) = (640, 480)
+                                elif (width <= 512 and height <= 384) or (height <= 512 and width <= 384):
+                                    (outwidth, outheight) = (width*2, height*2)
+                                else:
+                                    (outwidth, outheight) = (width, height)
+                                    
+                                gallery.write('<img src="{}" title="{}" style="width:{}px; height:{}px"/>'.format(
+                                    os.path.join(relpath, filename), filename, outwidth, outheight))
+
+                            else:
+                                gallery.write('<img src="{}" title="{}"/>'.format(os.path.join(relpath, filename), filename))
+                except Exception as ex:
+                    print("Error with {} in {}: \n{}".format(filename, dirpath, traceback.format_exc() ) )
+                    
+    gallery.write('\n</body>\n</html>')
+    gallery.close()
+    galleryfn
+    try:
+        notify2.init('Image Gallery')
+        n = notify2.Notification('Generated Gallery', galleryfn, 'image-x-generic')
+        n.show()
+        time.sleep(1)
+    except Exception:
+        pass
+
+
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,54 @@
+#!/usr/bin/python3
+import os, shutil, subprocess, sys, pdb, traceback
+
+from argparse import ArgumentParser
+
+def main():
+    parser = ArgumentParser(description='Finds images of a particular resolution.', add_help=False)
+    parser.add_argument('-w', dest='width', default='0',
+                       help='Width to search for', type=int)
+    parser.add_argument('-h',dest='height', default='0',
+                       help='Height to search for', type=int)
+    parser.add_argument('-l', dest='linkpath',
+                       help='Destination path to link to')
+    parser.add_argument('-m', dest='movepath',
+                       help='Destination path to move to')
+    parser.add_argument('-?', '--help', action='help',
+                       help='Displays this help message and exits.')
+    parser.add_argument('imagefolder', default='.', nargs='?',
+                       help='Image folder to search')
+
+    args = parser.parse_args()
+
+    for (dirpath, dirnames, filenames) in os.walk(args.imagefolder):
+        if not dirpath.endswith('.thumbs') \
+                and not (args.linkpath and os.path.abspath(dirpath) == os.path.abspath(args.linkpath)) \
+                and not (args.movepath and os.path.abspath(dirpath) == os.path.abspath(args.movepath)):
+            for filename in sorted(filenames):
+                try:
+                    if os.path.splitext(filename)[1].lower() in ('.jpeg', '.jpg', '.png', '.gif', '.bmp'):
+                        # Determine resolution:
+                        filepath = os.path.join(dirpath, filename)
+                        (width, height) = subprocess.check_output(['identify', '-format', '%wx%h',
+                            filepath]).decode().split('x')
+                        width = int(width)
+                        height = int(height)
+                        if (not args.width or args.width == width) and \
+                                (not args.height or args.height == height):
+                            if args.linkpath:
+                                destpath = os.path.join(args.linkpath, filename)
+                                print("Linking from", filepath, "to", destpath )
+                                os.link(filepath, destpath)
+                            elif args.movepath:
+                                destpath = os.path.join(args.movepath, filename)
+                                print("Moving from", filepath, "to", destpath )
+                                shutil.move(filepath, destpath)
+                            else:
+                                print("Found", filepath )
+                                
+                except Exception as ex:
+                    print("Error with {} in {}: \n{}".format(filename, dirpath, traceback.format_exc() ) )
+
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,18 @@
+NAME
+  2jpeg - convert image files in the current directory to JPEG
+SYNOPSIS
+  2jpeg
+DESCRIPTION
+  2jpeg converts every image file of a variety of formats 
+  (tga, bmp, png, gif)
+  in the current working directory to the JPEG format instead.
+  Conversion is performed using ImageMagick(1)'s convert(1) utility.
+  Original files are sent to the system
+  trash using the trash(1) utility, if available.
+NOTES
+  If missing, the trash(1) utility can be installed via the trash-cli
+  package on Debian systems.
+SEE ALSO
+  ImageMagick(1), convert(1), trash(1)
+AUTHOR
+  Ryan Armstrong <software@zerker.ca>

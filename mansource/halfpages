@@ -1,0 +1,16 @@
+NAME
+  halfpages - splits every image in a folder in half vertically
+SYNOPSIS
+  halfpages
+DESCRIPTION
+  halfpages takes every png image in the current folder and splits it
+  in half vertically. This can be useful for takes pages from a PDF 
+  where both sides of the page are on the same 'sheet' and creating
+  a result PDF where they are separate.
+  Conversion is performed using ImageMagick(1)'s convert(1) utility.
+  The output files are placed into a 'out' subfolder, 
+  which is created if needed.
+SEE ALSO
+  ImageMagick(1), convert(1)
+AUTHOR
+  Ryan Armstrong <software@zerker.ca>

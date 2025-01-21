@@ -1,0 +1,18 @@
+NAME
+  2flac - convert audio files in the current directory to FLAC
+SYNOPSIS
+  2flac
+DESCRIPTION
+  2flac converts every audio file of the m4a, ape or wav formats in the
+  current working directory to the flac(1) format instead.
+  Original files are sent to the system
+  trash using the trash(1) utility, if available.
+  Due to problems with some players, any embedded album art is then
+  removed using the metaflac(1) utility.
+NOTES
+  If missing, the trash(1) utility can be installed via the trash-cli
+  package on Debian systems.
+SEE ALSO
+  flac(1), metaflac(1), trash(1)
+AUTHOR
+  Ryan Armstrong <software@zerker.ca>

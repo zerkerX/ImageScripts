@@ -1,0 +1,37 @@
+#!/bin/sh
+backupfolder="backup/"
+SAVEIFS=$IFS
+IFS="
+"
+EXTS="tga
+bmp
+TGA
+BMP
+gif
+GIF
+jpg
+jpeg
+JPG
+JPEG
+ppm
+pbm
+tif
+tiff
+png
+PNG"
+mkdir $backupfolder
+for EXT in $EXTS
+do
+    for x in `ls *.$EXT`
+    do
+        if [ ! -f $x ]; then
+            continue
+        fi
+        
+        y=${x%\.*}
+        mv "$x" "$backupfolder$x"
+        tesseract "$backupfolder$x" "$y"
+    done
+done
+
+IFS=$SAVEIFS

@@ -1,0 +1,17 @@
+NAME
+  aspecticon - adjusts image files in the current directory to a square 256x256 icon image
+SYNOPSIS
+  aspecticon
+DESCRIPTION
+  aspecticon converts every image file of a variety of formats 
+  (tga, bmp, png, gif, jpeg)
+  in the current working directory to a 256x256 png
+  image. If the image is not square, transparent letter or pillarboxing
+  is added to preserve the aspect while ending up with a square result.
+  Conversion is performed using ImageMagick(1)'s composite(1) utility.
+  The output files are placed into a 'out' subfolder, 
+  which is created if needed.
+SEE ALSO
+  ImageMagick(1), composite(1)
+AUTHOR
+  Ryan Armstrong <software@zerker.ca>

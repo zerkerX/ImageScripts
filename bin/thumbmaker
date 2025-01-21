@@ -1,0 +1,42 @@
+#!/usr/bin/python3
+import os, subprocess, sys, pdb, traceback
+
+from argparse import ArgumentParser
+
+def main():
+    parser = ArgumentParser(description='Creates thumbnails of images in folder.', add_help=False)
+    parser.add_argument('-w', dest='width', default='',
+                       help='Maximum thumbnail width. If not specified, width is not constrained')
+    parser.add_argument('-h',dest='height', default='',
+                       help='Maximum thumbnail height. If not specified, height is not constrained')
+    parser.add_argument('-f', action='store_true', dest='forcethumb',
+                       help='If set, forces thumbnail regeneration. Otherwise, existing thumbnails will be used.')
+    parser.add_argument('-?', '--help', action='help',
+                       help='Displays this help message and exits.')
+    parser.add_argument('imagefolder', default='.', nargs='?',
+                       help='Image folder to generate a thumbnails for.')
+
+    args = parser.parse_args()
+
+    for (dirpath, dirnames, filenames) in os.walk(args.imagefolder):
+        for filename in sorted(filenames):
+            try:
+                namepart, ext = os.path.splitext(filename)
+                if ext.lower() in ('.jpeg', '.jpg', '.png', '.gif', '.bmp', '.svg') \
+                        and not namepart.endswith('-s'):
+                    inname = os.path.join(dirpath, filename)
+                    thumbname = os.path.join(dirpath, f'{namepart}-s{ext}')
+                    (width, height) = subprocess.check_output(['identify', '-format', '%wx%h',
+                        inname]).decode().split('x')
+                    width = int(width)
+                    height = int(height)
+
+                    if args.width and width > int(args.width) or args.height and height > int(args.height):
+                        if args.forcethumb or not os.path.exists(thumbname):
+                            subprocess.call(['magick', '-resize', f'>{args.width}x{args.height}',
+                                inname, thumbname])
+            except Exception as ex:
+                print(f"Error with {filename} in {dirpath}: \n{traceback.format_exc()}")
+
+if __name__ == '__main__':
+    main()

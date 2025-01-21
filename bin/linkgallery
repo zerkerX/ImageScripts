@@ -1,0 +1,102 @@
+#!/usr/bin/python3
+import os, subprocess, sys, pdb
+import urllib.parse
+
+from argparse import ArgumentParser
+
+def main():
+    parser = ArgumentParser(description='Creates a page with links to files.')
+    parser.add_argument('workfolder', default='.', nargs='?',
+                       help='Folder to generate a gallery for.')
+    parser.add_argument('-t', action='store_false', dest='titles',
+                       help='If set, surpresses titles for each subfolder')
+    parser.add_argument('-o', dest='outfilename',
+                       default='index.html',
+                       help='Output gallery filename')
+
+    args = parser.parse_args()
+
+    gallery = open(os.path.join(args.workfolder, args.outfilename), 'w')
+
+    gallery.write("""<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+    <html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="viewport" content="width=device-width" />
+        <title>Image Gallery</title>
+        <style type="text/css">
+        body {
+            background: black;
+            font-family: sans-serif;
+            font-size: 14px;
+            background: black;
+            margin: 0px;
+            padding: 0px;
+            color: white;
+        }
+        H1 {
+            margin: 0px;
+            padding: 10px;
+            width: 100%;
+            background: #444;
+            color: #09F;
+            font-size: 20px;
+            border-bottom: 2px solid #666;
+        }
+        
+        H2 {
+            margin: 0px;
+            padding: 10px;
+            color: white;
+            font-size: 18px;
+            border-bottom: 2px solid #666;
+            border-top: 2px solid #666;
+        }
+        
+        H3
+        {
+            font-weight: bold;
+            font-size: 15px;
+            margin: 0px;
+            padding: 0px;
+        }
+
+        /*Body Stuff*/
+        .entrylist {
+            margin: 10px;
+            padding: 10px;
+            background: black;
+            color: white;
+            border: 2px solid black;
+        }
+
+        /*Entry Stuff*/
+        .entry {
+            padding: 4px;
+            display: inline-block;
+            border: 1px solid #444;
+            width:auto;
+            height:auto;
+            text-align: center;
+            margin: 3px;
+        }
+
+        </style>
+    </head>
+    <body>
+    <h1>Image Gallery</h1>
+    """)
+
+    for (dirpath, dirnames, filenames) in os.walk(args.workfolder):
+        relpath = os.path.relpath(dirpath, args.workfolder)
+
+        if args.titles:
+            gallery.write('<h2>{}</h2>'.format(relpath))
+        for filename in sorted(filenames):
+            gallery.write('<a href="{}">{}</a><br/>\n'.format(urllib.parse.quote(os.path.join(relpath, filename)), filename))
+        
+    gallery.write('\n</body>\n</html>')
+    gallery.close()
+
+if __name__ == '__main__':
+    main()

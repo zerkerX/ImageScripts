@@ -1,0 +1,73 @@
+#!/usr/bin/python3
+import os, subprocess, sys, pdb, traceback, shutil
+
+from glob import glob
+from argparse import ArgumentParser
+
+def splitmanual(filename, res, levels):
+    if filename:
+        if res == 0:
+            subprocess.call(['pdfimages', filename, '-j', 'orig'])
+        else:
+            subprocess.call(['magick', "-density", "{0}x{0}".format(res),
+                filename, 'orig-%03d.png'])
+    
+    options = []
+    if levels is not None:
+        options += ['-level', levels]
+    
+    outpage = 0
+    for pageset in sorted(glob("orig-*")):
+        # Determine resolution:
+        (width, height) = subprocess.check_output(['identify', 
+            '-format', '%wx%h', pageset]).decode().split('x')
+        width = int(width)
+        height = int(height)
+        if (width > height):
+            outwidth = width / 2
+            
+            subprocess.call(['magick', pageset,
+                "-crop", "{}x{}".format(outwidth, height), "+repage"]
+                + options + ["out.png".format(outpage) ])
+                
+            # Note: The below relies on imagemagick naming convention
+            # for multi-file outputs
+            if outpage == 0:
+                # Page 0 typically has the back cover as the 'left' page:
+                shutil.move("out-0.png", "last.png".format(outpage))
+            else:
+                shutil.move("out-0.png", "page-{:03}.png".format(outpage))
+                outpage += 1
+
+            shutil.move("out-1.png", "page-{:03}.png".format(outpage))
+            outpage += 1
+        else:
+            print(pageset + " is already split.")
+            subprocess.call(['magick', pageset] + options + ["page-{:03}.png".format(outpage)])
+            outpage += 1
+
+    if os.path.exists("last.png"):
+        shutil.move("last.png", "page-{:03}.png".format(outpage))
+            
+    subprocess.call(['magick', "page*.png", "combined.pdf"])
+
+def main():
+    parser = ArgumentParser(description='Splits a double-paged manual into single pages.')
+    parser.add_argument('manualfilename',
+           help='Filename for the manual to process. '
+           'It not specified, assumes images already present in this folder, starting with "orig".', nargs="?")
+    parser.add_argument('-r',dest='res', default=0, type=int,
+           help='If specified, render the PDF to the specified resolution instead of extracting images.')
+    parser.add_argument('-l',dest='levels', default=None,
+           help='If specified, applies the imagemagick level '
+            'command with the specified limits. (e.g. "25%%" or "0%%,75%%")')
+
+    #TODO: Add options for pause to remove pages, and force first page unique
+    # Also add options for rebalacing colour and/or blanking out edges.
+
+    args = parser.parse_args()
+    
+    splitmanual(args.manualfilename, args.res, args.levels)
+
+if __name__ == '__main__':
+    main()

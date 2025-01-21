@@ -1,0 +1,32 @@
+#!/bin/sh
+outfolder="out/"
+SAVEIFS=$IFS
+IFS="
+"
+EXTS="tga
+bmp
+TGA
+BMP
+gif
+GIF
+jpg
+jpeg
+JPG
+JPEG
+png
+PNG"
+mkdir $outfolder
+for EXT in $EXTS
+do
+    for x in `ls *.$EXT`
+    do
+        if [ ! -f $x ]; then
+            continue
+        fi
+        
+        y=${x%\.*}
+        magick "$y.$EXT" -resize 480x640\! "$outfolder$y.$EXT"
+    done
+done
+
+IFS=$SAVEIFS
